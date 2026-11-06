@@ -2,63 +2,58 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class AuthController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Show the login form.
      */
-    public function index()
+    public function create(): View
     {
-        //
+        return view('auth.create');
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Handle user login.
      */
-    public function create()
+    public function store(Request $request): RedirectResponse
     {
-        
+        $credentials = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $remember = $request->boolean('remember');
+
+        if (Auth::attempt($credentials, $remember)) {
+            $request->session()->regenerate();
+
+            return redirect()->intended(route('jobs.index'))
+                ->with('success', 'Logged in successfully!');
+        }
+
+        return back()
+            ->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ])
+            ->onlyInput('email');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Handle user logout.
      */
-    public function store(Request $request)
+    public function destroy(Request $request): RedirectResponse
     {
-        //
-    }
+        Auth::logout();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('jobs.index')
+            ->with('success', 'Logged out successfully!');
     }
 }

@@ -4,63 +4,42 @@ namespace App\Http\Controllers;
 
 use App\Models\Job;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\View\View;
 
 class JobController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request): View
     {
-        $job = Job::with('employer')->filter(request()->only(['search', 'min_salary', 'max_salary', 'experience', 'category']));        
-        return view('jobs.index', ['jobs' => $job->get()]);
-    }
+        $filters = $request->only(['search', 'min_salary', 'max_salary', 'experience', 'category']);
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+        $version = Cache::rememberForever('jobs_list_cache_version', fn () => 1);
+        $cacheKey = 'jobs_list:v' . $version . ':' . md5(http_build_query($filters));
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
+        $jobs = Cache::remember($cacheKey, now()->addMinutes(60), function () use ($filters) {
+            return Job::with('employer')
+                ->filter($filters)
+                ->latest()
+                ->get();
+        });
+
+        return view('jobs.index', ['jobs' => $jobs]);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Job $job)
+    public function show(Job $job): View
     {
-        return view('jobs.show', ['job' => $job->load('employer.jobs')]);
-    }
+        $cachedJob = Cache::remember("job:{$job->id}", now()->addMinutes(60), function () use ($job) {
+            return $job->load([
+                'employer.jobs' => fn ($query) => $query->where('id', '!=', $job->id),
+            ]);
+        });
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return view('jobs.show', ['job' => $cachedJob]);
     }
 }

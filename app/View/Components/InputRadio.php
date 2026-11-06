@@ -13,11 +13,10 @@ class InputRadio extends Component
      */
     public function __construct(
         public ?string $name = null,
-        public ?array $values,
+        public ?array $values = null,
         public ?string $default = null,
-    )
-    {
-        //
+        public ?string $value = null,
+    ) {
     }
 
     /**
