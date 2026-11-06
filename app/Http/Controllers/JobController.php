@@ -19,12 +19,17 @@ class JobController extends Controller
         $version = Cache::rememberForever('jobs_list_cache_version', fn () => 1);
         $cacheKey = 'jobs_list:v' . $version . ':' . md5(http_build_query($filters));
 
-        $jobs = Cache::remember($cacheKey, now()->addMinutes(60), function () use ($filters) {
-            return Job::with('employer')
-                ->filter($filters)
+        $jobIds = Cache::remember($cacheKey, now()->addMinutes(60), function () use ($filters) {
+            return Job::filter($filters)
                 ->latest()
-                ->get();
+                ->pluck('id')
+                ->all();
         });
+
+        $jobs = Job::with('employer')
+            ->whereIn('id', $jobIds)
+            ->latest()
+            ->get();
 
         return view('jobs.index', ['jobs' => $jobs]);
     }
@@ -34,12 +39,10 @@ class JobController extends Controller
      */
     public function show(Job $job): View
     {
-        $cachedJob = Cache::remember("job:{$job->id}", now()->addMinutes(60), function () use ($job) {
-            return $job->load([
-                'employer.jobs' => fn ($query) => $query->where('id', '!=', $job->id),
-            ]);
-        });
+        $job->load([
+            'employer.jobs' => fn ($query) => $query->where('id', '!=', $job->id),
+        ]);
 
-        return view('jobs.show', ['job' => $cachedJob]);
+        return view('jobs.show', ['job' => $job]);
     }
 }
