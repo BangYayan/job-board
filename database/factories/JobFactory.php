@@ -23,7 +23,7 @@ class JobFactory extends Factory
             'salary' => $this->faker->numberBetween(30000, 100000),
             'category' => $this->faker->randomElement(Job::$categories),
             'location' => $this->faker->city(),
-            'experience' => $this->faker->randomElement(Job::$experience),
+            'experience' => $this->faker->randomElement(Job::$experiences),
         ];
     }
 }

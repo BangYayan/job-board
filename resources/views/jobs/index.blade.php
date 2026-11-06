@@ -1,22 +1,34 @@
 <x-layout>
+    <x-bread-crumbs class="mb-4" :links="['Jobs' => route('jobs.index')]"></x-bread-crumbs>
+    <x-card class="mb-4 text-sm">
+        <form action="{{ route('jobs.index') }}" method="GET" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <div class="mb-2 font-semibold">Search</div>
+                    <x-text-input name="search" placeholder="Search jobs..." value="{{ request('search') }}"/>
+                </div>
+                <div>
+                    <div class="mb-2 font-semibold">Salary</div>
+                    <div class="flex gap-x-2">
+                        <x-text-input name="min_salary" placeholder="From" value="{{ request('min_salary') }}"/>
+                        <x-text-input name="max_salary" placeholder="To" value="{{ request('max_salary') }}"/>
+                    </div>
+                </div>
+                <div>
+                    <div class="mb-2 font-semibold">Experience</div>
+                    <x-input-radio  name="experience" :values="array_merge([''], App\Models\Job::$experiences)" default="All" />
+                </div>
+                <div>
+                    <div class="mb-2 font-semibold">Category</div>
+                    <x-select-input name="category" :values="array_merge([''], App\Models\Job::$categories)" default="All" />
+                </div>
+            </div>
+            <x-button class="w-full cursor-pointer">Filter</x-button>
+        </form>
+    </x-card>
     @foreach ( $jobs as $job )
-        <x-card class="mb-4">
-            <div class="mb-4 flex justify-between">
-                <h2 class="font-medium text-lg">{{ $job->title }}</h2>
-                <div class="text-slate-500">${{ number_format($job->salary) }}</div>
-            </div>
-            <div class="flex justify-between mb-4 text-sm text-slate-500">
-                <div class="flex gap-x-4 items-center">
-                    <div>Company Name</div>
-                    <div>{{ $job->location }}</div>
-                </div>
-                <div class="flex gap-x-2 text-xs items-center">
-                    <x-tag>{{ Str::ucfirst($job->location) }}</x-tag>
-                    <x-tag>{{ Str::ucfirst($job->category) }}</x-tag>
-                </div>
-            </div>
-            <div class="text-sm whitespace-pre-line text-slate-500 mb-4">{{ $job->description }}</div>
-            <a href="{{ route('jobs.show', $job) }}" >View Details</a>
-        </x-card>
+        <x-job-card :job="$job">
+            <x-link-button href="{{ route('jobs.show', $job) }}">View Details</x-link-button>
+        </x-job-card>
     @endforeach
 </x-layout>
